@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des joueurs speciaux</title>
+    
+    <link href="https://googleapis.com" rel="stylesheet">
+
+    <style>
+        :root {
+            --green: #00e87a;
+            --green-glow: rgba(0, 232, 122, 0.3);
+            --dark: #050505;
+            --text-gray: #b0b0b0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Barlow', sans-serif; background: var(--dark); color: white; overflow-x: hidden; }
+
+        /* NAVIGATION */
+        nav {
+            padding: 15px 5vw;
+            background: rgba(0,0,0,0.95);
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+            display: flex; justify-content: center; border-bottom: 1px solid #222;
+        }
+        .logo { font-family: 'Bebas Neue'; font-size: 2.2rem; color: var(--green); cursor: pointer; letter-spacing: 2px; }
+        .logo span { color: white; }
+
+        /* PAGE SYSTEM */
+        .page { display: none; padding: 100px 5vw 60px; }
+        .active { display: block; animation: fadeIn 0.6s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* HOME GRID */
+        .hero-title { font-family: 'Bebas Neue'; font-size: clamp(2.5rem, 8vw, 5rem); text-align: center; margin-bottom: 40px; }
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px; max-width: 1200px; margin: 0 auto;
+        }
+        .player-card {
+            position: relative; height: 300px; border-radius: 12px;
+            overflow: hidden; cursor: pointer; border: 1px solid #222;
+            transition: 0.3s ease;
+        }
+        .player-card:hover { transform: translateY(-8px); border-color: var(--green); box-shadow: 0 10px 20px rgba(0,232,122,0.1); }
+        .player-img { width: 100%; height: 100%; object-fit: cover; }
+        .player-info-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 20px; background: linear-gradient(transparent, #000);
+        }
+        .player-name-card { font-family: 'Bebas Neue'; font-size: 1.5rem; text-transform: uppercase; }
+
+        /* DETAILS PAGE */
+        .detail-container { max-width: 850px; margin: 0 auto; text-align: center; }
+        .p-name { font-family: 'Bebas Neue'; font-size: clamp(3.5rem, 10vw, 6.5rem); color: white; line-height: 0.9; margin-bottom: 5px; }
+        .p-club { font-weight: 900; font-size: 1.1rem; color: #555; text-transform: uppercase; letter-spacing: 8px; margin-bottom: 30px; }
+
+        /* CIRCLE PHOTO */
+        .achievement-circle { 
+            width: 160px; height: 160px; 
+            border-radius: 50%; overflow: hidden; 
+            margin: 0 auto 15px; border: 3px solid var(--green);
+            box-shadow: 0 0 30px var(--green-glow);
+        }
+        .achievement-img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* GREEN HIGHLIGHT TEXT */
+        .achievement-highlight {
+            color: var(--green);
+            font-family: 'Bebas Neue';
+            font-size: 2.2rem;
+            letter-spacing: 1px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px var(--green-glow);
+        }
+
+        /* LONG STORY TEXT */
+        .story-content {
+            font-size: 1.25rem; line-height: 1.9; color: var(--text-gray);
+            text-align: justify; margin-bottom: 60px;
+        }
+        .story-content::first-letter {
+            float: left; font-family: 'Playfair Display', serif;
+            font-size: 5rem; line-height: 0.8; font-weight: 900;
+            padding-right: 12px; color: var(--green);
+        }
+        .story-content b { color: white; font-weight: 900; }
+
+        /* FOOTER NAVIGATION */
+        .nav-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 40px; padding-top: 30px; border-top: 1px solid #222;
+        }
+        .next-btn {
+            background: var(--green); color: black; padding: 14px 30px;
+            font-family: 'Bebas Neue'; font-size: 1.4rem; border-radius: 6px;
+            cursor: pointer; border: none; transition: 0.3s;
+        }
+        .next-btn:hover { background: white; transform: scale(1.05); }
+        .back-btn { color: #666; text-decoration: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .back-btn:hover { color: white; }
+    </style>
+</head>
+<body>
+
+    <nav><div class="logo" onclick="showPage('homePage')">FOOT<span>BALL</span></div></nav>
+
+    <!-- HOME PAGE -->
+    <div id="homePage" class="page active">
+        <h2 class="hero-title">LES LEGENDE DE BALLON ROND</h2>
+        <div class="players-grid" id="playersGrid"></div>
+    </div>
+
+    <!-- DETAILS PAGE -->
+    <div id="detailsPage" class="page">
+        <div class="detail-container" id="detailContent"></div>
+    </div>
+
+    <script>
+        const players = [
+            {
+                id: 0, name: "Pelé", club: "Brazil",
+                cardImg: "pelé.jpg",
+                achievementImg: "pelé.jpg",
+                highlight: "Le Seul Roi aux 3 Coupes du Monde",
+                story: "Pelé, né Edson Arantes do Nascimento, a transformé le football en une forme d'art universelle. Son parcours commence dans les rues de Bauru, où il jouait pieds nus avec des ballons faits de chaussettes remplies de journaux. À 15 ans, il rejoint le Santos FC et marque l'histoire dès ses débuts. En 1958, à seulement 17 ans, il stupéfie le monde en Suède en inscrivant six buts, dont un doublé en finale contre le pays hôte, devenant le plus jeune champion du monde de l'histoire. \n\nSa carrière est une suite ininterrompue de succès : il mène le Brésil à deux autres sacres en 1962 et surtout en 1970, lors d'un tournoi où il atteint la perfection technique et physique. Fidèle à Santos pendant 18 ans, il remporte deux Copas Libertadores et deux Coupes Intercontinentales, battant les plus grands clubs européens. Avec plus de 1281 buts inscrits, il reste le symbole éternel du <b>Joga Bonito</b>. Son héritage dépasse le sport ; il a été un ambassadeur de la paix et une icône culturelle mondiale jusqu'à son dernier souffle en 2022."
+            },
+            {
+                id: 1, name: "C. Ronaldo", club: "Portugal",
+                cardImg: "CR7.jpg",
+                achievementImg: "CR7.jpg",
+                highlight: "5 Ballons d'Or & Meilleur Buteur de l'Histoire",
+                story: "Cristiano Ronaldo est l'incarnation de la volonté humaine poussée à son paroxysme. Né sur l'île de Madère dans une famille modeste, il s'exile seul à Lisbonne à 12 ans pour suivre son rêve au Sporting. Repéré par Sir Alex Ferguson en 2003, il rejoint Manchester United où il devient le meilleur joueur du monde, remportant son premier Ballon d'Or en 2008. \n\nSon transfert au Real Madrid en 2009 marque le début d'une ère de domination sans précédent. En neuf saisons, il marque plus de buts qu'il ne joue de matchs (450 buts en 438 matchs) et mène le club vers quatre Ligues des Champions, dont trois consécutives. Travailleur acharné, il a réinventé son jeu pour devenir le buteur le plus prolifique de l'histoire du football officiel. En 2016, il offre au Portugal son premier titre majeur en remportant l'Euro, prouvant qu'il est bien plus qu'une machine à statistiques : il est un leader né qui ne recule devant aucun défi."
+            },
+            {
+                id: 2, name: "Lionel Messi", club: "Argentina",
+                cardImg: "messi.jpg",
+                achievementImg: "messi.jpg",
+                highlight: "8 Ballons d'Or & Sacre au Qatar 2022",
+                story: "Lionel Messi, le 'Génie de Rosario', possède un don que l'on ne voit qu'une fois par siècle. Arrivé au FC Barcelone à 13 ans pour soigner un déficit d'hormones de croissance, il est devenu le cœur battant du plus grand Barça de l'histoire. Sous les ordres de Guardiola, il atteint un niveau de créativité pur jamais vu, capable d'éliminer des défenses entières avec un centre de gravité bas et un ballon qui semble soudé à son pied gauche. \n\nDétenteur de huit <b>Ballons d'Or</b>, il a remporté 35 trophées avec Barcelone avant de rejoindre le PSG puis l'Inter Miami. Cependant, sa plus grande quête est restée longtemps inachevée avec l'Argentine. Après des finales perdues et des critiques acerbes, il finit par triompher en remportant la Copa América 2021, suivie de l'apothéose absolue : la Coupe du Monde 2022. Au Qatar, il a porté son peuple avec sept buts et une influence totale, mettant fin au débat sur le plus grand joueur de tous les temps par un couronnement divin."
+            },
+            {
+                id: 3, name: "D. Maradona", club: "Argentina",
+                cardImg: "maradona.jpg",
+                achievementImg: "maradona.jpg",
+                highlight: "La Main de Dieu & Le But du Siècle",
+                story: "Diego Armando Maradona n'était pas seulement un footballeur, c'était un rebelle, une icône sociale et un artiste pur. Issu du bidonville de Villa Fiorito, il a utilisé son pied gauche comme un pinceau pour peindre l'histoire du sport. Son passage à Naples reste légendaire : il a transformé un club du sud méprisé en champion d'Italie à deux reprises, défiant les riches clubs du nord. \n\nMais c'est en 1986, lors de la Coupe du Monde au Mexique, qu'il entre dans l'immortalité. En quart de finale contre l'Angleterre, il marque deux buts qui définissent sa dualité : la 'Main de Dieu', un geste de roublardise, suivi du 'But du Siècle', où il dribble six joueurs adverses sur 60 mètres. Il a mené l'Argentine au titre mondial presque seul, avec une passion et une fureur de vaincre qui ont ému le monde. Malgré une vie tourmentée, 'El Pibe de Oro' reste le joueur le plus aimé pour son authenticité et son génie brut qui ont transcendé le football."
+            },
+            {
+                id: 4, name: "Z. Zidane", club: "France",
+                cardImg: "zidane.jpg",
+                achievementImg: "zidane.jpg",
+                highlight: "Doublé en Finale 98 & Volée de 2002",
+                story: "Zinedine Zidane est le maître de l'élégance et de la simplicité complexe. Chaque contrôle, chaque roulette était un geste de pure classe. Révélé à Bordeaux, il devient une star mondiale à la Juventus. Le 12 juillet 1998, il entre dans le cœur de tous les Français en inscrivant deux buts de la tête en finale de la Coupe du Monde contre le Brésil. Cette victoire, au-delà du sport, a unifié toute une nation derrière son visage. \n\nAu Real Madrid, il confirme son statut de 'Maestro' en inscrivant l'un des buts les plus célèbres de l'histoire en finale de la Ligue des Champions 2002 : une volée du pied gauche d'une pureté technique absolue. Meneur de jeu à la vision panoramique, Zidane savait transformer un ballon difficile en un moment de grâce. Il a terminé sa carrière sur une finale de Coupe du Monde 2006 héroïque, restant pour toujours le symbole d'un football où l'esthétique rencontre l'efficacité."
+            },
+            {
+                id: 5, name: "Ronaldo R9", club: "Brazil",
+                cardImg: "ronaldo.jpg",
+                achievementImg: "ronaldo.jpg",
+                highlight: "Le Phénomène & Meilleur Buteur en 2002",
+                story: "Ronaldo Nazário, surnommé 'Le Phénomène', a redéfini les standards de l'attaquant moderne. Alliant une puissance physique colossale à une vitesse de pointe et une technique de dribble déroutante, il était inarrêtable à ses débuts au PSV et au FC Barcelone. Sa saison 1996-1997 en Espagne, où il marque 47 buts en 49 matchs à seulement 20 ans, reste l'une des plus impressionnantes de l'histoire. \n\nAprès deux graves blessures aux genoux à l'Inter Milan qui ont menacé sa carrière, il réalise le plus grand retour du sport en 2002. Lors de la Coupe du Monde en Corée et au Japon, il marque huit buts, dont un doublé décisif en finale contre l'Allemagne, offrant au Brésil sa cinquième étoile. Double Ballon d'Or, Ronaldo a laissé une empreinte indélébile par sa capacité à surmonter la douleur pour retrouver son trône. Il reste pour beaucoup le plus grand numéro 9 de l'histoire, capable d'humilier les plus grands défenseurs par un simple mouvement de rein."
+            },
+            {
+                id: 6, name: "Ronaldinho", club: "Brazil",
+                cardImg: "ronaldinoh.jpg",
+                achievementImg: "ronaldinoh.jpg",
+                highlight: "Magie au Barça & Ballon d'Or 2005",
+                story: "Ronaldinho Gaúcho était la joie de vivre faite footballeur. Avec son sourire éternel et ses cheveux au vent, il a rappelé au monde entier que le football est avant tout un plaisir. Passé par le PSG, c'est au FC Barcelone qu'il atteint une dimension divine. Durant ses années catalanes, il invente des gestes techniques (élastico, passes aveugles, jongles en plein match) qui semblaient impossibles à réaliser. \n\nEn 2005, son niveau est tel qu'il reçoit une ovation debout de la part des supporters du Real Madrid à Santiago Bernabéu après un doublé mémorable. Champion du monde en 2002 et vainqueur de la Ligue des Champions en 2006, il a remporté le Ballon d'Or 2005 à une époque où il était sans aucun doute le joueur le plus spectaculaire de la planète. Plus qu'un palmarès, Ronaldinho a laissé un héritage de bonheur et d'improvisation, prouvant que l'on peut être le meilleur tout en s'amusant comme un enfant dans la rue."
+            },
+            {
+                id: 7, name: "A. Iniesta", club: "Spain",
+                cardImg: "iniesta.jpg",
+                achievementImg: "iniesta.jpg",
+                highlight: "Le But Historique de la Finale 2010",
+                story: "Andrés Iniesta, surnommé 'L'Illusionniste', est le cerveau silencieux de la période la plus faste du football espagnol et barcelonais. Formé à la Masia, il a formé avec Xavi le milieu de terrain le plus complémentaire et le plus technique de l'histoire du jeu. Sa capacité à s'extraire de petits périmètres sous la pression de trois adversaires grâce à sa célèbre 'Croqueta' était unique. \n\nL'apogée de sa carrière survient le 11 juillet 2010 à Johannesburg. À la 116ème minute de la finale de la Coupe du Monde contre les Pays-Bas, il reprend de volée un ballon qui offre à l'Espagne son premier titre mondial. Ce moment l'a élevé au rang de héros national intouchable. Vainqueur de quatre Ligues des Champions et de deux Euros, Iniesta a toujours fait preuve d'une humilité exemplaire, prouvant que l'intelligence de jeu et la maîtrise technique valent toutes les puissances physiques du monde."
+            },
+            {
+                id: 8, name: "Xavi", club: "Spain",
+                cardImg: "xavi.jpg",
+                achievementImg: "xavi.jpg",
+                highlight: "Maître du Tiki-Taka & Cerveau du Jeu",
+                story: "Xavi Hernandez est le joueur qui a redéfini le rôle de milieu de terrain pour le 21ème siècle. Véritable métronome du 'Tiki-Taka', ce style de jeu basé sur la possession et les passes courtes, il dictait le rythme de chaque match avec une précision de métronome. Sa vision de jeu à 360 degrés lui permettait de savoir exactement où se trouvaient ses coéquipiers et ses adversaires sans même regarder. \n\nPilier indéboulonnable du FC Barcelone de Guardiola et de la sélection espagnole, il a remporté tous les trophées possibles : 8 Liga, 4 Ligues des Champions, 2 Euros et la Coupe du Monde 2010. Xavi ne perdait jamais le ballon ; il le gérait comme un architecte gère ses plans. Son influence sur le terrain était telle qu'il était considéré comme un entraîneur en short, capable de moduler l'intensité d'un match à lui seul par ses choix de passes. Il reste l'un des plus grands maîtres à jouer de tous les temps."
+            },
+            {
+                id: 9, name: "Neymar Jr", club: "Brazil",
+                cardImg: "neymar.jpg",
+                achievementImg: "neymar.jpg",
+                highlight: "Meilleur Buteur du Brésil & Or à Rio",
+                story: "Neymar Jr est le dernier grand génie du 'Joga Bonito' brésilien. Révélé à Santos comme un héritier direct du Roi Pelé, il a enflammé le Brésil par ses dribbles spectaculaires et son audace avant de rejoindre l'Europe. Au FC Barcelone, il a formé avec Messi et Suarez la légendaire 'MSN', l'attaque la plus dévastatrice de l'histoire moderne, remportant le triplé historique en 2015. \n\nSa carrière internationale est marquée par un record immense : en 2023, il dépasse Pelé pour devenir le meilleur buteur officiel de l'histoire de la sélection brésilienne. Son moment de gloire nationale survient en 2016 lors des Jeux Olympiques de Rio, où il marque le penalty décisif en finale pour offrir au Brésil la seule médaille d'or olympique qui lui manquait, devant un Maracanã en délire. Malgré les critiques, Neymar reste un artiste pur, capable d'improvisations géniales qui rappellent que le football est, avant tout, un spectacle de créativité."
+            }
+        ];
+
+        /* CORE FUNCTIONS (Code in English) */
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function initHome() {
+            const grid = document.getElementById('playersGrid');
+            players.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.onclick = () => showDetails(p.id);
+                card.innerHTML = `<img src="${p.cardImg}" class="player-img"><div class="player-info-overlay"><div class="player-name-card">${p.name}</div></div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function showDetails(id) {
+            const p = players[id];
+            const nextId = (p.id + 1) % players.length;
+
+            const content = `
+                <div class="back-btn" onclick="showPage('homePage')">← RETOUR À LA LISTE</div>
+                
+                <h1 class="p-name">${p.name}</h1>
+                <p class="p-club">${p.club}</p>
+
+                <div class="achievement-circle">
+                    <img src="${p.achievementImg}" class="achievement-img">
+                </div>
+
+                <div class="achievement-highlight">${p.highlight}</div>
+
+                <div class="story-content">${p.story}</div>
+
+                <div class="nav-footer">
+                    <div class="back-btn" onclick="showPage('homePage')">ACCUEIL</div>
+                    <button class="next-btn" onclick="showDetails(${nextId})">LÉGENDE SUIVANTE →</button>
+                </div>
+            `;
+            document.getElementById('detailContent').innerHTML = content;
+            showPage('detailsPage');
+        }
+
+        window.onload = initHome;
+    </script>
+</body>
+</html>
